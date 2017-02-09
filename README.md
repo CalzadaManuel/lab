@@ -1,1 +1,1 @@
-# lab
+# lab script repository
