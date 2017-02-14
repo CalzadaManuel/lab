@@ -1,0 +1,58 @@
+#!/usr/bin/python
+
+import sys
+import os
+import argparse
+import glob
+from Bio import SeqIO
+
+class FullPaths(argparse.Action):
+  """Expand user- and relative-paths"""
+  def __call__(self, parser, namespace, values, option_string=None):
+      setattr(namespace, self.dest,
+          os.path.abspath(os.path.expanduser(values)))
+
+def listdir_fullpath(d):
+  return [os.path.join(d, f) for f in os.listdir(d)]
+
+def is_dir(dirname):
+  """Checks if a path is a directory"""
+  if not os.path.isdir(dirname):
+      msg = "{0} is not a directory".format(dirname)
+      raise argparse.ArgumentTypeError(msg)
+  else:
+      return dirname
+
+def get_arguments():
+   """Parse command line arguments"""
+   parser = argparse.ArgumentParser(description="Parser")
+   input_files = parser.add_mutually_exclusive_group(required=True)
+   input_files.add_argument('-d', '--directory', help = 'Directory of alignments',
+       type=is_dir)
+   return parser.parse_args()
+
+components = [str(0),str(1),str(2),str(3),str(4)]
+
+def parse_components(alignName):
+  for component in components:
+      seqs = []
+      count = 0
+      for seq_record in SeqIO.parse(alignName+".fasta", "fasta"):
+          if seq_record.id.endswith(component):
+              count = count+1
+              seq_record.id = alignName+"_"+str(count)+"_"+component
+              seq_record.description = ""
+              print len(seq_record.id)
+              seqs.append(seq_record)
+          else:
+              continue
+      outFile=open(alignName+"_"+component+".fasta", "w")
+
+      for seq in seqs:
+          SeqIO.write(seq, outFile, "fasta")
+
+args=get_arguments()
+
+for align in glob.glob(args.directory +'*.fasta'):
+  alignName=os.path.splitext(align)[0].replace(args.directory,"")
+  print alignName
